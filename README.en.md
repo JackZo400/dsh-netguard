@@ -218,7 +218,8 @@ node test/selftest.mjs         # 判定逻辑 + 重定向 + 大小上限 + 超�
 node test/plugin-selftest.mjs  # 插件接线：服务/工具/配置覆盖（65 条断言）
 ```
 
-**Both are fully offline**: the DNS resolver and fetch are injected fakes, so no network is
+The two scripts run **314 assertions** in total. **Both are fully offline**: the DNS resolver and
+fetch are injected fakes, so no network is
 needed, nothing flaps, no keys are required -- and they will never "probe the intranet as a side
 effect". The assertions are real: delete any single protection in `src/` and the script turns
 red (drop the per-hop redirect re-check and 4 assertions fail; drop the size cap and 7 fail).
