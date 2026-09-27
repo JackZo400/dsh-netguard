@@ -1,0 +1,54 @@
+{
+  "name": "dsh-netguard",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "给 dsh 的出网护栏：只允许公网 http(s)、按字节上限与超时抓取、重定向每一跳都复查（防 SSRF / DNS rebinding / 云元数据）。一个服务 + 一个默认关闭的工具。",
+  "license": "MIT",
+  "author": "JackZo400",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "ssrf",
+    "security",
+    "netguard",
+    "url",
+    "fetch",
+    "redirect",
+    "dns-rebinding",
+    "metadata"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JackZo400/dsh-netguard.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./src/*.js": "./src/*.js",
+    "./package.json": "./package.json"
+  },
+  "icon": "./icon.svg",
+  "meta": {
+    "title": "Net Guard",
+    "description": "出网护栏：只放公网、限大小限超时、重定向逐跳复查"
+  },
+  "files": [
+    "index.js",
+    "src",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test/selftest.mjs && node test/plugin-selftest.mjs"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

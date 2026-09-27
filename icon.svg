@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Net Guard">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7dc4ff"/>
+      <stop offset="1" stop-color="#b48cff"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#101422"/>
+  <!-- 盾牌：只放行公网 -->
+  <path d="M32 9 L50 16 V32 C50 43 42 51 32 55 C22 51 14 43 14 32 V16 Z"
+        fill="none" stroke="url(#g)" stroke-width="3.4" stroke-linejoin="round"/>
+  <!-- 里面的网络：三个节点，外面被一道斜杠划掉 -->
+  <g fill="#eaf1ff">
+    <circle cx="26" cy="27" r="3"/>
+    <circle cx="39" cy="33" r="3"/>
+    <circle cx="27" cy="41" r="2.4"/>
+  </g>
+  <g stroke="#eaf1ff" stroke-width="1.8" stroke-linecap="round" opacity="0.75">
+    <line x1="26" y1="27" x2="39" y2="33"/>
+    <line x1="26" y1="27" x2="27" y2="41"/>
+  </g>
+  <!-- 挡住的那一刀 -->
+  <g stroke="#ff7d9c" stroke-width="4" stroke-linecap="round">
+    <line x1="19" y1="47" x2="45" y2="18"/>
+  </g>
+</svg>
