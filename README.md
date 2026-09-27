@@ -1,5 +1,7 @@
 # dsh-netguard
 
+[English](README.en.md) | 简体中文
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（dsh）用的**出网护栏**：
 让"拉一个外部 URL"这件事不再是一个 SSRF 入口。
 
@@ -8,7 +10,9 @@
 
 ---
 
-## 不挡会怎样
+## 为什么需要它
+
+**不挡会怎样**
 
 Agent 插件几乎都要出去拉东西：图片、语音、网页、回调。只要那个 URL 来自
 **聊天消息或模型输出**（群里有人贴了张图、模型自己拼了个地址），它就是攻击者能控制的字符串。
@@ -40,6 +44,38 @@ dsh plugin --profile web add github:JackZo400/dsh-netguard
 ```
 
 没有依赖、没有子进程、没有要装的二进制。Node 18.17+（实测 22.x）。
+
+## 配置
+
+```yaml
+- insert:
+    - id: netguard
+      name: dsh-netguard
+      config:
+        allowedProtocols: ['http:', 'https:']   # 只放这两种
+        maxBytes: 8388608                       # 一次最多下多少字节（8 MiB）
+        onOverflow: error                       # error = 报错；truncate = 截断到上限
+        timeoutMs: 20000                        # 整条链共用的超时
+        allowRedirects: true                    # 跟不跟重定向（每一跳都会重新体检）
+        maxRedirects: 3
+        blockedPorts: [22, 23, 25, 6379, 11211, 27017]   # 内网服务常客
+        allowUrlCredentials: false              # 允不允许 URL 里带 user:pass@
+        allowSingleLabel: false                 # 允不允许 http://intranet/ 这种
+        userAgent: dsh-netguard/0.1.0
+        enableTool: false                       # 要不要登记 fetch_url 工具
+        toolMaxChars: 20000                     # 工具最多回多少字符正文
+```
+
+**大小上限与超时的取舍**（这几条是真会踩到的）：
+
+- **超限默认报错，而不是静默截断。** 因为主要调用场景是"拉图/拉音频"，
+  截断的字节是**坏数据**：半张 JPEG 解不出图，可流量已经花掉、附件也存下了，
+  最后报的还是个更难查的错。要"只要前面一段"就显式写 `onOverflow: truncate`。
+- **`Content-Length` 报得太大就直接不下载**，流量一点都不花。
+- **读流是一边读一边数的**，超了立刻断（`reader.cancel()`），不是读完再判断 ——
+  对面挂一个 50GB 的流，读完再判断等于自己把内存吃光。
+- **超时是整条链共用一个预算**，不是每跳各给一份。否则"跳 10 次、每次卡 19 秒"
+  能拖出 190 秒。跳转途中花掉的时间也会算进去。
 
 ## 用法
 
@@ -100,38 +136,6 @@ isPublicIp('169.254.169.254')   // false
 ```
 
 `src/ip.js` 是纯函数，不碰网络、不读配置，可以单独拿去用。
-
-## 配置
-
-```yaml
-- insert:
-    - id: netguard
-      name: dsh-netguard
-      config:
-        allowedProtocols: ['http:', 'https:']   # 只放这两种
-        maxBytes: 8388608                       # 一次最多下多少字节（8 MiB）
-        onOverflow: error                       # error = 报错；truncate = 截断到上限
-        timeoutMs: 20000                        # 整条链共用的超时
-        allowRedirects: true                    # 跟不跟重定向（每一跳都会重新体检）
-        maxRedirects: 3
-        blockedPorts: [22, 23, 25, 6379, 11211, 27017]   # 内网服务常客
-        allowUrlCredentials: false              # 允不允许 URL 里带 user:pass@
-        allowSingleLabel: false                 # 允不允许 http://intranet/ 这种
-        userAgent: dsh-netguard/0.1.0
-        enableTool: false                       # 要不要登记 fetch_url 工具
-        toolMaxChars: 20000                     # 工具最多回多少字符正文
-```
-
-**大小上限与超时的取舍**（这几条是真会踩到的）：
-
-- **超限默认报错，而不是静默截断。** 因为主要调用场景是"拉图/拉音频"，
-  截断的字节是**坏数据**：半张 JPEG 解不出图，可流量已经花掉、附件也存下了，
-  最后报的还是个更难查的错。要"只要前面一段"就显式写 `onOverflow: truncate`。
-- **`Content-Length` 报得太大就直接不下载**，流量一点都不花。
-- **读流是一边读一边数的**，超了立刻断（`reader.cancel()`），不是读完再判断 ——
-  对面挂一个 50GB 的流，读完再判断等于自己把内存吃光。
-- **超时是整条链共用一个预算**，不是每跳各给一份。否则"跳 10 次、每次卡 19 秒"
-  能拖出 190 秒。跳转途中花掉的时间也会算进去。
 
 ## 它到底挡了什么
 
@@ -198,7 +202,9 @@ node test/plugin-selftest.mjs  # 插件接线：服务/工具/配置覆盖（65 
 断言是真断言：把 `src/` 里任何一条防护删掉，脚本都会红（比如把重定向的逐跳复查去掉，
 会挂 4 条；把大小上限去掉，会挂 7 条）。
 
-## 已知局限（没防住的部分，写清楚比假装防住了强）
+## 已知局限
+
+**没防住的部分，写清楚比假装防住了强**
 
 1. **DNS 解析与实际连接之间的时间差（TOCTOU）**。这里查一次 DNS、判定通过，
    然后交给 fetch 自己**再查一次**才连。攻击者如果用一个 TTL=0 的域名，
@@ -232,24 +238,6 @@ MIT © 2026 JackZo400
 
 ---
 
-## English (short)
+## English
 
-**dsh-netguard** — an egress guard for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
-
-Any URL that comes from a chat message or model output is attacker-controlled, and plugins fetch
-those URLs from a machine that usually sits somewhere privileged. This plugin turns "just fetch it"
-into a checked operation: **public addresses only**, every resolved record is classified (not just
-the first), **every redirect hop is re-validated** (so `302 → 169.254.169.254` is blocked),
-size and time are capped (streaming, so a huge body is never buffered), and non-http(s) protocols,
-URL credentials and a list of internal service ports are rejected.
-
-It handles the ugly parts most regex-based checks miss: `127.1`, `2130706433`, `0177.0.0.1`,
-`0x7f.1`, `::ffff:127.0.0.1`, 6to4/NAT64 embeds, `localhost.`, and single-label intranet names.
-IPv6 is allowlisted to `2000::/3`.
-
-Exposes a `netguard` service for other plugins (plus a `fetch_url` tool that is **off by default**).
-Pure logic lives in `src/ip.js` and can be used standalone. No dependencies.
-`npm test` runs 314 offline assertions — DNS and fetch are injected, so nothing touches the network.
-
-Known gaps are documented honestly, including the DNS TOCTOU window between our lookup and the
-connection, and the fact that content-level prompt injection is out of scope. MIT.
+→ Full English README: [README.en.md](README.en.md)
